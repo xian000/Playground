@@ -61,6 +61,7 @@
 #include <uORB/topics/airspeed.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/estimator_status.h>
+#include <uORB/topics/vehicle_vision_attitude.h>
 #include <drivers/drv_hrt.h>
 
 #include <mathlib/mathlib.h>
