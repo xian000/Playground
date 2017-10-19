@@ -155,7 +155,7 @@ private:
 	Vector<3>	_accel;
 	Vector<3>	_mag;
 
-	vehicle_attitude_s _vision = {};
+	vehicle_vision_attitude_s _vision = {};
 	Vector<3>	_vision_hdg;
 
 	att_pos_mocap_s _mocap = {};
