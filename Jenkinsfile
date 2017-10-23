@@ -19,7 +19,11 @@ make posix_sitl_default'''
     }
     stage('Test') {
       parallel {
-        sh '''echo "Hello Jenkins test"'''
+        stage('hello_world') {
+	  steps {
+            sh '''echo "Hello Jenkins test"'''
+	  }
+	}
       }
     }
   }
