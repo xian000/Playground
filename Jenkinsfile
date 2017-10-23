@@ -18,7 +18,7 @@ make posix_sitl_default'''
       }
     }
     stage('Test') {
-      echo "Hello Jenkins test"
+      sh ```echo "Hello Jenkins test"```
     }
   }
   environment {
