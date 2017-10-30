@@ -491,41 +491,52 @@ MavlinkReceiver::handle_message_command_long(mavlink_message_t *msg)
 		}
 
 		if (cmd_mavlink.command == MAV_CMD_LOGGING_START) {
-			// we already instanciate the streaming object, because at this point we know on which
-			// mavlink channel streaming was requested. But in fact it's possible that the logger is
-			// not even running. The main mavlink thread takes care of this by waiting for an ack
-			// from the logger.
-			_mavlink->try_start_ulog_streaming(msg->sysid, msg->compid);
+			// check that we have enough bandwidth available: this is given by the configured logger topics
+			// and rates. The 5000 is somewhat arbitrary, but makes sure that we cannot enable log streaming
+			// on a radio link
+			if (_mavlink->get_data_rate() < 5000) {
+				send_ack = true;
+				ret = PX4_ERROR;
+
+			} else {
+				// we already instanciate the streaming object, because at this point we know on which
+				// mavlink channel streaming was requested. But in fact it's possible that the logger is
+				// not even running. The main mavlink thread takes care of this by waiting for an ack
+				// from the logger.
+				_mavlink->try_start_ulog_streaming(msg->sysid, msg->compid);
+			}
 
 		} else if (cmd_mavlink.command == MAV_CMD_LOGGING_STOP) {
 			_mavlink->request_stop_ulog_streaming();
 		}
 
-		struct vehicle_command_s vcmd = {
-			.timestamp = hrt_absolute_time(),
-			.param5 = cmd_mavlink.param5,
-			.param6 = cmd_mavlink.param6,
-			/* Copy the content of mavlink_command_long_t cmd_mavlink into command_t cmd */
-			.param1 = cmd_mavlink.param1,
-			.param2 = cmd_mavlink.param2,
-			.param3 = cmd_mavlink.param3,
-			.param4 = cmd_mavlink.param4,
-			.param7 = cmd_mavlink.param7,
-			// XXX do proper translation
-			.command = cmd_mavlink.command,
-			.target_system = cmd_mavlink.target_system,
-			.target_component = cmd_mavlink.target_component,
-			.source_system = msg->sysid,
-			.source_component = msg->compid,
-			.confirmation = cmd_mavlink.confirmation,
-			.from_external = true
-		};
+		if (!send_ack) {
+			struct vehicle_command_s vcmd = {
+				.timestamp = hrt_absolute_time(),
+				.param5 = cmd_mavlink.param5,
+				.param6 = cmd_mavlink.param6,
+				/* Copy the content of mavlink_command_long_t cmd_mavlink into command_t cmd */
+				.param1 = cmd_mavlink.param1,
+				.param2 = cmd_mavlink.param2,
+				.param3 = cmd_mavlink.param3,
+				.param4 = cmd_mavlink.param4,
+				.param7 = cmd_mavlink.param7,
+				// XXX do proper translation
+				.command = cmd_mavlink.command,
+				.target_system = cmd_mavlink.target_system,
+				.target_component = cmd_mavlink.target_component,
+				.source_system = msg->sysid,
+				.source_component = msg->compid,
+				.confirmation = cmd_mavlink.confirmation,
+				.from_external = true
+			};
 
-		if (_cmd_pub == nullptr) {
-			_cmd_pub = orb_advertise_queue(ORB_ID(vehicle_command), &vcmd, vehicle_command_s::ORB_QUEUE_LENGTH);
+			if (_cmd_pub == nullptr) {
+				_cmd_pub = orb_advertise_queue(ORB_ID(vehicle_command), &vcmd, vehicle_command_s::ORB_QUEUE_LENGTH);
 
-		} else {
-			orb_publish(ORB_ID(vehicle_command), _cmd_pub, &vcmd);
+			} else {
+				orb_publish(ORB_ID(vehicle_command), _cmd_pub, &vcmd);
+			}
 		}
 	}
 
