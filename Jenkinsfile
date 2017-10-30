@@ -61,7 +61,12 @@ pipeline {
             branch 'master'
           }
           steps {
-            sh 'git clone https://github.com/PX4/Devguide.git'
+            ws(dir: 'dev_guide') {
+              sh '''git clone https://github.com/PX4/Devguide.git
+cd Devguide
+find . -name \\*.md'''
+            }
+            
           }
         }
         stage('User Guide Update') {
